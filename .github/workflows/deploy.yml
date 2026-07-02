@@ -1,0 +1,151 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  IMAGE_NAME: ghcr.io/vasanth1602/myraid-devops-assessment
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  # ============================================================
+  # JOB 1 — TEST
+  # Runs on every push AND every pull request to main
+  # Blocks the deploy job if any test fails
+  # ============================================================
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------------------------------------------
+      # Stage 1 — Checkout Code
+      # --------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # Stage 2 — Install Dependencies
+      # --------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        working-directory: app
+        run: pip install -r requirements.txt
+
+      # --------------------------------------------------------
+      # Stage 3 — Run Tests
+      # --------------------------------------------------------
+      - name: Run tests with pytest
+        working-directory: app
+        run: pytest tests/ -v
+
+  # ============================================================
+  # JOB 2 — DEPLOY
+  # Runs ONLY on push to main (not on pull requests)
+  # Requires the test job to pass first
+  # ============================================================
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # --------------------------------------------------------
+      # Stage 4 — Checkout Code
+      # --------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # Stage 5 — Build Docker Image
+      # --------------------------------------------------------
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+            -t ${{ env.IMAGE_NAME }}:latest \
+            ./app
+
+      # --------------------------------------------------------
+      # Stage 6 — Push to GHCR
+      # --------------------------------------------------------
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Docker image to GHCR
+        run: |
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.IMAGE_NAME }}:latest
+
+      # --------------------------------------------------------
+      # Stage 7 — Deploy to EC2
+      # --------------------------------------------------------
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Pull latest image from GHCR — fail immediately if pull fails
+            docker pull ${{ env.IMAGE_NAME }}:latest || exit 1
+
+            # Stop and remove existing container gracefully
+            docker stop flask-app || true
+            docker rm flask-app || true
+
+            # Run new container
+            docker run -d \
+              --name flask-app \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              -e ENVIRONMENT=production \
+              ${{ env.IMAGE_NAME }}:latest
+
+            # Allow container to start
+            sleep 3
+
+            # Quick container health check
+            docker ps | grep flask-app
+
+      # --------------------------------------------------------
+      # Stage 8 — Health Check Validation
+      # --------------------------------------------------------
+      - name: Validate deployment health
+        run: |
+          echo "Waiting for application to be ready..."
+
+          MAX_RETRIES=12
+          RETRY_INTERVAL=5
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.EC2_HOST }}/health)
+
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "✅ Health check PASSED on attempt $i — Application is live at http://${{ secrets.EC2_HOST }}"
+              exit 0
+            fi
+
+            echo "Attempt $i/$MAX_RETRIES — HTTP $HTTP_STATUS, retrying in ${RETRY_INTERVAL}s..."
+            sleep $RETRY_INTERVAL
+          done
+
+          echo "❌ Health check FAILED after $MAX_RETRIES attempts"
+          exit 1

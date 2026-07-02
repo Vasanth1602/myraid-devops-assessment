@@ -1,0 +1,22 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored and should NEVER be committed
+
+# Name of the EC2 key pair created in AWS Console
+# Example: myraid-assessment-key
+key_name = "myraid-assessment-key"
+
+# AWS region (default: ap-south-1 Mumbai)
+aws_region = "ap-south-1"
+
+# EC2 instance type (t3.micro — free tier eligible in ap-south-1)
+instance_type = "t3.micro"
+
+# Project name (used for naming and tagging all resources)
+project_name = "myraid-assessment"
+
+# Environment tag
+environment = "assessment"
+
+# Unique suffix for S3 bucket name (S3 bucket names are globally unique across all AWS accounts)
+# Change this if you get a "BucketAlreadyExists" error — use your initials or any short unique string
+s3_bucket_suffix = "001"

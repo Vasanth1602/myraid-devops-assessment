@@ -1,0 +1,19 @@
+{
+  "total_requests": 1470,
+  "request_rate_rps": "12.11",
+  "error_rate_pct": "0.00",
+  "response_time": {
+    "min_ms": "40.31",
+    "avg_ms": "118.70",
+    "med_ms": "75.74",
+    "p90_ms": "136.66",
+    "p95_ms": "417.42",
+    "p99_ms": "N/A",
+    "max_ms": "1174.30"
+  },
+  "per_endpoint_p95_ms": {
+    "root": "365.75",
+    "health": "609.43",
+    "info": "348.98"
+  }
+}

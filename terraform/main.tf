@@ -179,7 +179,7 @@ resource "aws_instance" "app" {
   user_data = file("${path.module}/user_data.sh")
 
   root_block_device {
-    volume_size           = 8
+    volume_size           = 30
     volume_type           = "gp3"
     delete_on_termination = true
   }
@@ -281,6 +281,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title   = "CPU Utilization (%)"
+          region  = var.aws_region
           period  = 300
           stat    = "Average"
           view    = "timeSeries"
@@ -296,6 +297,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title   = "Memory Used (%)"
+          region  = var.aws_region
           period  = 300
           stat    = "Average"
           view    = "timeSeries"
@@ -310,10 +312,11 @@ resource "aws_cloudwatch_dashboard" "main" {
         width  = 12
         height = 6
         properties = {
-          title  = "Network In / Out (Bytes)"
-          period = 300
-          stat   = "Sum"
-          view   = "timeSeries"
+          title   = "Network In / Out (Bytes)"
+          region  = var.aws_region
+          period  = 300
+          stat    = "Sum"
+          view    = "timeSeries"
           metrics = [
             ["AWS/EC2", "NetworkIn",  "InstanceId", aws_instance.app.id],
             ["AWS/EC2", "NetworkOut", "InstanceId", aws_instance.app.id]
@@ -328,6 +331,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title   = "Disk Used (%)"
+          region  = var.aws_region
           period  = 300
           stat    = "Average"
           view    = "timeSeries"

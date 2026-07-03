@@ -22,6 +22,7 @@ A production-like Flask API deployed on AWS using Terraform, Docker, NGINX, and 
 - [Trade-offs](#trade-offs)
 - [Cost Awareness](#cost-awareness)
 - [Future Improvements](#future-improvements)
+- [Demo Video](#demo-video)
 - [Documentation Index](#documentation-index)
 
 ---
@@ -96,6 +97,7 @@ myraid-devops-assessment/
 │   ├── security-summary.md       # Security controls, trade-offs, hardening recommendations
 │   ├── load-testing-report.md    # k6 methodology, results, bottleneck analysis
 │   ├── final-report.md           # Complete assessment summary
+│   ├── demo-video.mp4            # 8-minute implementation and demo video
 │   ├── App in browser.png        # Screenshot — live app /health endpoint
 │   ├── EC2 instance.png          # Screenshot — EC2 running in AWS Console
 │   ├── S3 bucket.png             # Screenshot — S3 versioning + encryption
@@ -403,7 +405,9 @@ Zero errors across all 3 endpoints. Full analysis: [`docs/load-testing-report.md
 
 ## Setup Guide
 
-> For a detailed step-by-step guide see [`docs/deployment-guide.md`](docs/deployment-guide.md).
+> **Note for evaluators:** The AWS infrastructure has been torn down after verification to stay within Free Tier limits. To access the live application, run `terraform apply` from the `terraform/` directory (takes ~3 minutes). All verification evidence — screenshots, load testing results, and CloudWatch monitoring — is in the `docs/` folder.
+
+> For a full step-by-step guide see [`docs/deployment-guide.md`](docs/deployment-guide.md).
 
 ```bash
 # 1. Clone the repository
@@ -539,10 +543,27 @@ All resources are selected to stay within the AWS Free Tier.
 
 ---
 
+## Demo Video
+
+[▶️ Watch Demo Video](docs/demo-video.mp4)
+
+An 8-minute walkthrough covering:
+- Infrastructure provisioning with Terraform
+- Flask API application and Dockerfile
+- GitHub Actions CI/CD pipeline (2 jobs, 8 stages)
+- Live application endpoints
+- CloudWatch monitoring — dashboard, alarms, log streams
+- k6 load testing results and analysis
+- Security controls and documentation overview
+
+---
+
 ## Documentation Index
 
 | Document | Purpose |
 |---|---|
+| [`docs/architecture-diagram.png`](docs/architecture-diagram.png) | Full system architecture diagram |
+| [`docs/demo-video.mp4`](docs/demo-video.mp4) | 8-minute implementation and demo video |
 | [`docs/deployment-guide.md`](docs/deployment-guide.md) | Complete step-by-step deployment from scratch |
 | [`docs/security-summary.md`](docs/security-summary.md) | All security controls, trade-offs, and production hardening recommendations |
 | [`docs/load-testing-report.md`](docs/load-testing-report.md) | k6 load test methodology, results, and bottleneck analysis |

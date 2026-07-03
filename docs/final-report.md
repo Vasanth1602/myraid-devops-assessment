@@ -64,58 +64,21 @@ A Python Flask REST API containerized with Docker and deployed to an AWS EC2 ins
 
 ## 3. Architecture Overview
 
-```
-Developer Workstation
-    │
-    ├── terraform apply
-    │       └── Provisions all AWS resources (VPC → EC2 → S3 → CloudWatch)
-    │
-    └── git push origin main
-              │
-              ▼
-         GitHub Actions (CI/CD Pipeline)
-              │
-              ├── Job 1: test  ─────── Runs on every PR + push
-              │   ├── Python 3.9 setup
-              │   ├── pip install
-              │   └── pytest (3 tests — all must pass)
-              │
-              └── Job 2: deploy ────── Runs only on push to main
-                  ├── docker build → tagged with commit SHA + latest
-                  ├── docker push → GitHub Container Registry (GHCR)
-                  └── SSH to EC2
-                            │
-                            ▼
-                       AWS VPC (10.0.0.0/16) — ap-south-1
-                            │
-                       Internet Gateway
-                            │
-                       Security Group
-                       Port 80 (HTTP) | Port 22 (SSH)
-                            │
-                       EC2 t3.micro — Amazon Linux 2023
-                       IAM Role: SSM + CloudWatch + S3
-                            │
-                       ┌────┴────┐
-                       │        │
-                     NGINX     CloudWatch Agent
-                     :80        └── Metrics: mem, disk
-                       │        └── Logs: 4 streams
-                    proxy
-                       │
-                   Gunicorn :5000
-                   (2 workers, non-root appuser)
-                       │
-                   Flask API
-                   ├── GET /
-                   ├── GET /health
-                   └── GET /info
+![Architecture Diagram](architecture-diagram.png)
 
-S3 Bucket (myraid-assessment-001)
-├── Versioning: Enabled
-├── Encryption: AES-256
-└── Public Access: Blocked
-```
+| Layer | Component | Details |
+|---|---|---|
+| Developer | Local workstation | `terraform apply` + `git push origin main` |
+| Source Control | GitHub | `github.com/Vasanth1602/myraid-devops-assessment` |
+| CI/CD | GitHub Actions | 2 jobs (test + deploy), 8 stages |
+| Registry | GHCR | `ghcr.io/vasanth1602/myraid-devops-assessment:latest` |
+| Network | AWS VPC | `10.0.0.0/16`, ap-south-1, Internet Gateway, Public Subnet |
+| Compute | EC2 t3.micro | Amazon Linux 2023, 30 GB gp3, IAM role attached |
+| Reverse Proxy | NGINX :80 | Security headers, `server_tokens off`, proxy to Gunicorn |
+| App Server | Gunicorn :5000 | 2 workers, non-root `appuser`, Docker HEALTHCHECK every 30s |
+| Application | Flask API | `GET /`, `GET /health`, `GET /info` |
+| Storage | S3 | Versioning, AES-256 encryption, public access blocked |
+| Monitoring | CloudWatch | Dashboard (4 widgets), 3 alarms, 4 log streams |
 
 ---
 
@@ -468,6 +431,8 @@ Ordered by impact for a real production upgrade:
 
 | Document | Location | Contents |
 |---|---|---|
+| Architecture Diagram | `docs/architecture-diagram.png` | Full system architecture diagram |
+| Demo Video | `docs/demo-video.mp4` | 8-minute implementation and demo walkthrough |
 | README | `README.md` | Architecture, setup guide, API reference, design decisions |
 | Deployment Guide | `docs/deployment-guide.md` | Step-by-step from scratch: AWS, Terraform, GitHub, CI/CD |
 | Security Summary | `docs/security-summary.md` | All security controls, trade-offs, production hardening |
